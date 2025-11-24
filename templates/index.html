@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DL Prediction Hub</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧠 DL Prediction Hub</h1>
+            <p>Deep Learning: ANN • CNN • RNN</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('ann')">ANN (Data)</button>
+            <button class="tab-btn" onclick="showTab('cnn')">CNN (Vision)</button>
+            <button class="tab-btn" onclick="showTab('rnn')">RNN (Text)</button>
+        </div>
+
+        <div id="ann" class="tab-content active">
+            <div class="card">
+                <h2>Diabetes Prediction (ANN)</h2>
+                <p class="subtitle">Artificial Neural Network • 8 Inputs</p>
+                <form id="ann-form">
+                    <div class="grid">
+                        <div class="input-group"><label>Pregnancies</label><input type="number" name="pregnancies" placeholder="e.g. 0" value="0" required></div>
+                        <div class="input-group"><label>Glucose</label><input type="number" name="glucose" placeholder="e.g. 120" required></div>
+                        <div class="input-group"><label>Blood Pressure</label><input type="number" name="bp" placeholder="e.g. 70" required></div>
+                        <div class="input-group"><label>Skin Thickness</label><input type="number" name="skin" placeholder="e.g. 20" value="20" required></div>
+                        <div class="input-group"><label>Insulin</label><input type="number" name="insulin" placeholder="e.g. 79" value="79" required></div>
+                        <div class="input-group"><label>BMI</label><input type="number" name="bmi" placeholder="e.g. 32.0" step="0.1" required></div>
+                        <div class="input-group"><label>Diabetes Pedigree</label><input type="number" name="dpf" placeholder="e.g. 0.5" step="0.01" required></div>
+                        <div class="input-group"><label>Age</label><input type="number" name="age" placeholder="e.g. 33" required></div>
+                    </div>
+                    <button type="submit">Analyze Risk Data</button>
+                </form>
+                <div id="ann-result" class="result-box hidden"></div>
+            </div>
+        </div>
+
+        <div id="cnn" class="tab-content hidden">
+            <div class="card">
+                <h2>Image Classifier (CNN)</h2>
+                <p class="subtitle">Cat vs. Dog Detection</p>
+                
+                <div class="upload-area" id="drop-zone" onclick="document.getElementById('cnn-file').click()">
+                    <img id="cnn-preview" src="" style="max-height: 200px; display: none; border-radius: 10px; margin-bottom: 10px; margin-left: auto; margin-right: auto;">
+                    <p id="upload-text">📂 Click to Upload Image</p>
+                    <input type="file" id="cnn-file" accept="image/*" style="display:none;">
+                </div>
+
+                <button id="cnn-btn">Analyze Image</button>
+                <div id="cnn-result" class="result-box hidden"></div>
+            </div>
+        </div>
+
+        <div id="rnn" class="tab-content hidden">
+            <div class="card">
+                <h2>Sentiment Analysis (RNN)</h2>
+                <p class="subtitle">Recurrent Neural Network (LSTM)</p>
+                <div class="input-group" style="width: 100%;">
+                    <label>Enter your text review below:</label>
+                    <textarea id="rnn-input" placeholder="Type something like: 'I really loved this movie!' or 'The food was terrible.'"></textarea>
+                </div>
+                <button id="rnn-btn">Analyze Sentiment</button>
+                <div id="rnn-result" class="result-box hidden"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Tab Switching Logic ---
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(div => div.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.remove('hidden');
+            const buttons = document.querySelectorAll('.tab-btn');
+            if(tabId === 'ann') buttons[0].classList.add('active');
+            if(tabId === 'cnn') buttons[1].classList.add('active');
+            if(tabId === 'rnn') buttons[2].classList.add('active');
+        }
+
+        // --- 1. Handle ANN Form Submission ---
+        document.getElementById('ann-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const resultBox = document.getElementById('ann-result');
+            
+            resultBox.innerHTML = "⏳ Processing with Neural Network...";
+            resultBox.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/predict/ann', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                if(data.error) {
+                    resultBox.innerHTML = `<p style="color: #ff4b4b;">Error: ${data.error}</p>`;
+                } else {
+                    resultBox.innerHTML = `<h3>${data.result}</h3><p>${data.details}</p>`;
+                }
+            } catch (err) {
+                resultBox.innerHTML = `<p style="color: #ff4b4b;">Connection Error</p>`;
+            }
+        });
+
+        // --- 2. Handle CNN Logic ---
+        const cnnFile = document.getElementById('cnn-file');
+        const cnnPreview = document.getElementById('cnn-preview');
+        const uploadText = document.getElementById('upload-text');
+
+        // Show preview
+        cnnFile.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    cnnPreview.src = e.target.result;
+                    cnnPreview.style.display = 'block';
+                    uploadText.style.display = 'none';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle Upload
+        document.getElementById('cnn-btn').addEventListener('click', async () => {
+            const file = cnnFile.files[0];
+            const resultBox = document.getElementById('cnn-result');
+
+            if(!file) return alert("Please select an image first!");
+
+            resultBox.innerHTML = "⏳ Scanning Image...";
+            resultBox.classList.remove('hidden');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/predict/cnn', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                if(data.error) {
+                    resultBox.innerHTML = `<p style="color: #ff4b4b;">Error: ${data.error}</p>`;
+                } else {
+                    resultBox.innerHTML = `<h3>${data.result}</h3><p>${data.details}</p>`;
+                }
+            } catch (err) {
+                resultBox.innerHTML = `<p style="color: #ff4b4b;">Connection Error</p>`;
+            }
+        });
+
+        // --- 3. Handle RNN Button Click ---
+        document.getElementById('rnn-btn').addEventListener('click', async () => {
+            const textArea = document.getElementById('rnn-input');
+            const resultBox = document.getElementById('rnn-result');
+            const text = textArea.value;
+
+            if(!text.trim()) {
+                alert("Please enter some text first!");
+                return;
+            }
+
+            resultBox.innerHTML = "⏳ Reading Text...";
+            resultBox.classList.remove('hidden');
+
+            const formData = new FormData();
+            formData.append('text_input', text);
+
+            try {
+                const response = await fetch('/predict/rnn', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                if(data.error) {
+                    resultBox.innerHTML = `<p style="color: #ff4b4b;">Error: ${data.error}</p>`;
+                } else {
+                    let color = "#ccc";
+                    if(data.result.includes("Positive")) color = "#00ff88";
+                    if(data.result.includes("Negative")) color = "#ff4b4b";
+                    if(data.result.includes("Neutral")) color = "#ffd700";
+
+                    resultBox.innerHTML = `<h3 style="color: ${color};">${data.result}</h3><p>${data.details}</p>`;
+                }
+            } catch (err) {
+                resultBox.innerHTML = `<p style="color: #ff4b4b;">Connection Error</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
