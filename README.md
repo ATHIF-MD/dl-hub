@@ -47,8 +47,8 @@ Unlike standard machine learning apps, this project handles complex unstructured
 
 Follow these steps to run the project locally.
 
-1. Clone the Repository
-```bash
+```1. Clone the Repository
+bash
 git clone [https://github.com/ATHIF-MD/dl-hub.git](https://github.com/ATHIF-MD/dl-hub.git)
 cd dl-hub
 
